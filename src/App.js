@@ -1,7 +1,7 @@
 import './App.css';
 import React, { Component } from 'react';
-import DatePicker from "react-datepicker";
 import axios from 'axios';
+import Modal from "react-bootstrap/Modal";
 
 export default class App extends Component {
   constructor(props) {
@@ -15,7 +15,12 @@ export default class App extends Component {
      adults: 1,
      children: 1,
      rooms: [],
-     chosenRoom: null
+     chosenRoom: null,
+     chosenRoomPrice: null,
+     discountPrice: null,
+     show: false,
+     promo_code: "",
+     validation: true
     };
   }
 
@@ -41,7 +46,8 @@ export default class App extends Component {
 
   chooseRoom(room) {
     this.setState({
-      chosenRoom: room.name
+      chosenRoom: room.name,
+      chosenRoomPrice: room.price
     })
   }
 
@@ -63,6 +69,34 @@ export default class App extends Component {
         })
         .catch(error => this.setState({ error: error.message }));
   };
+
+  handleClose = () => {
+    this.setState({
+        show: false
+    })
+  }
+
+  handleShow() {
+      this.setState({
+          show: true
+        });
+  }
+
+  handlePromoCode() {
+    const regex = /^THN[0-9][0-9]$/
+    console.log(regex.test("THN25"));
+    if(!regex.test(this.state.promo_code)) {
+      this.setState({
+        validation: false
+      });
+    } else {
+      const discount = this.state.promo_code.slice(-2);
+      console.log(discount);
+      this.setState({
+        discountPrice: this.state.chosenRoomPrice - (discount/ 100 * this.state.chosenRoomPrice)
+      });
+    }
+  }
 
   render() {
     return (
@@ -100,27 +134,20 @@ export default class App extends Component {
             </div>
           </div>
         </nav>
-
         <div className="engine text-center">
             <div className="engine-wrapper">
                 <div className="container text-center">
                   <form id="search" className="form-inline">
                     <div className="form-group">
-                      <div className="input-group date" data-date-format="dd/mm/yyyy">
+                      <div className="input-group date datepicker" data-date-format="dd/mm/yyyy">
                       <input id="checkin" type="text" className="form-control" placeholder={this.state.checkin} onChange={e => this.handleInput(e)}/>
-                        {/* <DatePicker
-                          id="checkin"
-                          selected={this.state.checkin}
-                          onChange={e => this.handleInput(e)}
-                        /> */}
                           <div className="input-group-addon" >
                             <span className="glyphicon glyphicon-calendar"></span>
                           </div>
                       </div>
                     </div>
-
                     <div className="form-group">
-                      <div className="input-group date" data-date-format="dd/mm/yyyy">
+                      <div className="input-group date datepicker" data-date-format="dd/mm/yyyy">
                         <input id="checkout" type="text" className="form-control" placeholder={this.state.checkout} onChange={e => this.handleInput(e)}/>
                           <div className="input-group-addon" >
                             <span className="glyphicon glyphicon-calendar"></span>
@@ -257,14 +284,24 @@ export default class App extends Component {
                     <div className="card-checkout clearfix">
                         <div className="left pull-left">
                             <p className="main">Total</p>
-                            <p className="base"><a href="#">Price details ></a></p>
+                            <p className="base"><a href="#">Price details</a></p>
                         </div>
                         <div className="right pull-right">
-                            <p className="main">€350</p>
+                            <p className="main">€ {this.state.discountPrice ? 
+                            <span className="line-through">{this.state.chosenRoomPrice}</span> : this.state.chosenRoomPrice}</p>
+                            <p className="main">{this.state.discountPrice ? "€ " + this.state.discountPrice : null}</p>
                         </div>
                     </div>
-
-                    <button type="button" className="btn btn-primary btn-group-justified" data-toggle="modal" data-target="#myModal">
+                    
+                      <div className="form-group">
+                        <label for="promoCode">Please enter your promo code</label>
+                        <input id="promo_code" type="text" className="form-control" onChange={e => this.handleInput(e)}/>
+                        <button type="submit" className="btn btn-secondary" onClick={() => this.handlePromoCode()}>Validate</button>
+                        
+                      </div>
+                      <span>{this.state.validation ? null : "Incorrect Promo code"}</span>
+                    
+                    <button type="button" className="btn btn-primary btn-group-justified" onClick={() => this.handleShow()}>
                     Save
                     </button>
                 </div>
@@ -311,24 +348,19 @@ export default class App extends Component {
 </footer>
 
 {/* Modal */}
-<div id="myModal" className="modal fade" role="dialog">
-  <div className="modal-dialog">
-
-    <div className="modal-content">
-      <div className="modal-header">
-        <button type="button" className="close" data-dismiss="modal">&times;</button>
-        <h4 className="modal-title">Modal Header</h4>
-      </div>
-      <div className="modal-body">
-        <p>Some text in the modal.</p>
-      </div>
-      <div className="modal-footer">
-        <button type="button" className="btn btn-default" data-dismiss="modal">Close</button>
-      </div>
-    </div>
-
-  </div>
-</div>
+                <Modal
+                    centered
+                    style={{opacity:1}}
+                    show={this.state.show}
+                    onHide={this.handleClose}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Congratulations</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>Your room has been booked!</Modal.Body>
+                    <Modal.Footer>
+                    <button variant="secondary" onClick={this.handleClose}>Proceed to payment</button>
+                    </Modal.Footer>
+                </Modal>
 
       </div>
     )
